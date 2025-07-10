@@ -41,7 +41,7 @@ private:
   class Impl;
 
   /** The actual implementation, which is hidden from the header.  */
-  std::vector<Impl> impls;
+  std::vector<std::unique_ptr<Impl>> impls;
 
 protected:
 

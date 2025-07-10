@@ -90,9 +90,6 @@ public:
                  const std::string& muc)
     : MucClient(gameId, jid, password, muc), bc(b)
   {}
-  Impl() = delete;
-  Impl(const Impl&) = delete;
-  void operator=(const Impl&) = delete;
 
   /**
    * When refreshed, also make sure to explicitly instantiate the channel
@@ -119,12 +116,11 @@ XmppBroadcast::Impl::CreateChannel (const gloox::JID& j)
 XmppBroadcast::XmppBroadcast (
     xaya::SynchronisedChannelManager& cm,
     const std::string& gameId,
-    const std::string& jidStr, const std::string& password,
+    const std::string& jid, const std::string& password,
     const std::string& mucServer)
   : xaya::ReceivingOffChainBroadcast(cm)
 {
-  gloox::JID jid = jidStr;
-  impls.emplace_back(*this, gameId, jid, password, mucServer);
+  impls.emplace_back(std::make_unique<Impl>(*this, gameId, jid, password, mucServer));
 }
 
 XmppBroadcast::XmppBroadcast (
@@ -135,20 +131,18 @@ XmppBroadcast::XmppBroadcast (
 {
   CHECK(jids.size() == mucServers.size());
   for(size_t i = 0; i < jids.size(); ++i) {
-    gloox::JID jid = jids.at(i);
-    impls.emplace_back(*this, gameId, jid, password, mucServers.at(i));
+    impls.emplace_back(std::make_unique<Impl>(*this, gameId, jids.at(i), password, mucServers.at(i)));
   }
 }
 
 XmppBroadcast::XmppBroadcast (
     const xaya::uint256& id,
     const std::string& gameId,
-    const std::string& jidStr, const std::string& password,
+    const std::string& jid, const std::string& password,
     const std::string& mucServer)
   : xaya::ReceivingOffChainBroadcast(id)
 {
-  gloox::JID jid = jidStr;
-  impls.emplace_back(*this, gameId, jid, password, mucServer);
+  impls.emplace_back(std::make_unique<Impl>(*this, gameId, jid, password, mucServer));
 }
 
 XmppBroadcast::~XmppBroadcast () = default;
@@ -156,8 +150,8 @@ XmppBroadcast::~XmppBroadcast () = default;
 void
 XmppBroadcast::SendMessage (const std::string& msg)
 {
-  for(auto& impl : impls) {
-    auto* c = impl.GetChannel<BcChannel> (GetChannelId ());
+  for(size_t i = 0; i < impls.size(); ++i) {
+    auto* c = impls.at(i)->GetChannel<BcChannel> (GetChannelId ());
     if (c == nullptr)
       {
         LOG (WARNING) << "Cannot send message, disconnected?";
@@ -170,19 +164,19 @@ XmppBroadcast::SendMessage (const std::string& msg)
 void
 XmppBroadcast::SetRootCA (const std::string& path)
 {
-  for(auto& impl : impls) {
-    CHECK (!impl.IsConnected ()) << "XmppBroadcast is already connected";
-    impl.SetRootCA (path);
+  for(size_t i = 0; i < impls.size(); ++i) {
+    CHECK (!impls.at(i)->IsConnected ()) << "XmppBroadcast is already connected";
+    impls.at(i)->SetRootCA (path);
   }
 }
 
 void
 XmppBroadcast::Start ()
 {
-  for(auto& impl : impls) {
-    if (!impl.Connect ())
+  for(size_t i = 0; i < impls.size(); ++i) {
+    if (!impls.at(i)->Connect ())
       LOG (WARNING) << "Failed with initial client connect, will keep trying";
-    impl.refresher = std::make_unique<MucClient::Refresher> (impl);
+    impls.at(i)->refresher = std::make_unique<MucClient::Refresher> (*impls.at(i));
 
     /* The refresher will execute immediately, which ensures that we instantiate
       the channel once to join it.  */
@@ -192,9 +186,9 @@ XmppBroadcast::Start ()
 void
 XmppBroadcast::Stop ()
 {
-  for(auto& impl : impls) {
-    impl.refresher.reset ();
-    impl.Disconnect ();
+  for(size_t i = 0; i < impls.size(); ++i) {
+    impls.at(i)->refresher.reset ();
+    impls.at(i)->Disconnect ();
   }
 }
 
