@@ -116,10 +116,11 @@ XmppBroadcast::Impl::CreateChannel (const gloox::JID& j)
 XmppBroadcast::XmppBroadcast (
     xaya::SynchronisedChannelManager& cm,
     const std::string& gameId,
-    const std::string& jid, const std::string& password,
+    const std::string& jidStr, const std::string& password,
     const std::string& mucServer)
   : xaya::ReceivingOffChainBroadcast(cm)
 {
+  gloox::JID jid = jidStr;
   impls.emplace_back(*this, gameId, jid, password, mucServer);
 }
 
@@ -130,17 +131,20 @@ XmppBroadcast::XmppBroadcast (
   : xaya::ReceivingOffChainBroadcast(cm)
 {
   CHECK(jids.size() == mucServers.size());
-  for(size_t i = 0; i < jids.size(); ++i)
-    impls.emplace_back(*this, gameId, jids.at(i), password, mucServers.at(i));
+  for(size_t i = 0; i < jids.size(); ++i) {
+    gloox::JID jid = jids.at(i);
+    impls.emplace_back(*this, gameId, jid, password, mucServers.at(i));
+  }
 }
 
 XmppBroadcast::XmppBroadcast (
     const xaya::uint256& id,
     const std::string& gameId,
-    const std::string& jid, const std::string& password,
+    const std::string& jidStr, const std::string& password,
     const std::string& mucServer)
   : xaya::ReceivingOffChainBroadcast(id)
 {
+  gloox::JID jid = jidStr;
   impls.emplace_back(*this, gameId, jid, password, mucServer);
 }
 
