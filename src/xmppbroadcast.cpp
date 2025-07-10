@@ -120,7 +120,18 @@ XmppBroadcast::XmppBroadcast (
     const std::string& mucServer)
   : xaya::ReceivingOffChainBroadcast(cm)
 {
-  impl = std::make_unique<Impl> (*this, gameId, jid, password, mucServer);
+  impls.emplace_back(*this, gameId, jid, password, mucServer);
+}
+
+XmppBroadcast::XmppBroadcast (
+    xaya::SynchronisedChannelManager& cm, const std::string& gameId,
+    const std::vector<std::string>& jids, const std::string& password,
+    const std::vector<std::string>& mucServers)
+  : xaya::ReceivingOffChainBroadcast(cm)
+{
+  CHECK(jids.size() == mucServers.size());
+  for(size_t i = 0; i < jids.size(); ++i)
+    impls.emplace_back(*this, gameId, jids.at(i), password, mucServers.at(i));
 }
 
 XmppBroadcast::XmppBroadcast (
@@ -130,7 +141,7 @@ XmppBroadcast::XmppBroadcast (
     const std::string& mucServer)
   : xaya::ReceivingOffChainBroadcast(id)
 {
-  impl = std::make_unique<Impl> (*this, gameId, jid, password, mucServer);
+  impls.emplace_back(*this, gameId, jid, password, mucServer);
 }
 
 XmppBroadcast::~XmppBroadcast () = default;
@@ -138,38 +149,46 @@ XmppBroadcast::~XmppBroadcast () = default;
 void
 XmppBroadcast::SendMessage (const std::string& msg)
 {
-  auto* c = impl->GetChannel<BcChannel> (GetChannelId ());
-  if (c == nullptr)
-    {
-      LOG (WARNING) << "Cannot send message, disconnected?";
-      return;
-    }
-  c->Send (msg);
+  for(auto& impl : impls) {
+    auto* c = impl.GetChannel<BcChannel> (GetChannelId ());
+    if (c == nullptr)
+      {
+        LOG (WARNING) << "Cannot send message, disconnected?";
+        return;
+      }
+    c->Send (msg);
+  }
 }
 
 void
 XmppBroadcast::SetRootCA (const std::string& path)
 {
-  CHECK (!impl->IsConnected ()) << "XmppBroadcast is already connected";
-  impl->SetRootCA (path);
+  for(auto& impl : impls) {
+    CHECK (!impl.IsConnected ()) << "XmppBroadcast is already connected";
+    impl.SetRootCA (path);
+  }
 }
 
 void
 XmppBroadcast::Start ()
 {
-  if (!impl->Connect ())
-    LOG (WARNING) << "Failed with initial client connect, will keep trying";
-  impl->refresher = std::make_unique<MucClient::Refresher> (*impl);
+  for(auto& impl : impls) {
+    if (!impl.Connect ())
+      LOG (WARNING) << "Failed with initial client connect, will keep trying";
+    impl.refresher = std::make_unique<MucClient::Refresher> (impl);
 
-  /* The refresher will execute immediately, which ensures that we instantiate
-     the channel once to join it.  */
+    /* The refresher will execute immediately, which ensures that we instantiate
+      the channel once to join it.  */
+  }
 }
 
 void
 XmppBroadcast::Stop ()
 {
-  impl->refresher.reset ();
-  impl->Disconnect ();
+  for(auto& impl : impls) {
+    impl.refresher.reset ();
+    impl.Disconnect ();
+  }
 }
 
 } // namespace xmppbroadcast

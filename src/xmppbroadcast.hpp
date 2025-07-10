@@ -24,6 +24,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace xmppbroadcast
 {
@@ -40,7 +41,7 @@ private:
   class Impl;
 
   /** The actual implementation, which is hidden from the header.  */
-  std::unique_ptr<Impl> impl;
+  std::vector<Impl> impls;
 
 protected:
 
@@ -61,6 +62,11 @@ public:
       xaya::SynchronisedChannelManager& cm, const std::string& gameId,
       const std::string& jid, const std::string& password,
       const std::string& mucServer);
+
+  explicit XmppBroadcast (
+      xaya::SynchronisedChannelManager& cm, const std::string& gameId,
+      const std::vector<std::string>& jids, const std::string& password,
+      const std::vector<std::string>& mucServers);
   ~XmppBroadcast ();
 
   XmppBroadcast () = delete;
@@ -75,8 +81,8 @@ public:
   /* We use our own custom start/stop, which connects the XMPP client
      and runs a refresher.  The XMPP receiving thread will push messages
      to us, which we feed back to OffChainBroadcast.  */
-  void Start () override;
-  void Stop () override;
+  virtual void Start () override;
+  virtual void Stop () override;
 
 };
 
