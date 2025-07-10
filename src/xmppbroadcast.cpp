@@ -90,6 +90,9 @@ public:
                  const std::string& muc)
     : MucClient(gameId, jid, password, muc), bc(b)
   {}
+  Impl() = delete;
+  Impl(const Impl&) = delete;
+  void operator=(const Impl&) = delete;
 
   /**
    * When refreshed, also make sure to explicitly instantiate the channel
