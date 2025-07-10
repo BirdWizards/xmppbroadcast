@@ -18,7 +18,6 @@
 
 #include "rpcserver.hpp"
 
-#include "private/mucclient.hpp"
 #include "rpc-stubs/broadcastrpcserverstub.h"
 
 #include <xayautil/base64.hpp>
@@ -27,6 +26,7 @@
 #include <jsonrpccpp/common/exception.h>
 #include <jsonrpccpp/server/connectors/httpserver.h>
 
+#include "private/mucclient.hpp"
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
