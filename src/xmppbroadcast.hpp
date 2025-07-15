@@ -73,7 +73,7 @@ public:
   XmppBroadcast (const XmppBroadcast&) = delete;
   void operator= (const XmppBroadcast&) = delete;
 
-  bool IsConnected();
+  bool IsAnyConnected();
 
   /**
    * Sets the trusted root CA for the XMPP TLS connection.

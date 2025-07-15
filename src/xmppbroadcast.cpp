@@ -162,9 +162,13 @@ XmppBroadcast::SendMessage (const std::string& msg)
 }
 
 bool
-XmppBroadcast::IsConnected()
+XmppBroadcast::IsAnyConnected()
 {
-	return impl->IsConnected();
+	for(size_t i = 0; i < impls.size(); ++i) {
+    if(impls.at(i)->IsConnected())
+      return true;
+  }
+  return false;
 }
 
 void
