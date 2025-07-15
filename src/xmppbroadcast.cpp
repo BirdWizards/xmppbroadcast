@@ -161,6 +161,12 @@ XmppBroadcast::SendMessage (const std::string& msg)
   }
 }
 
+bool
+XmppBroadcast::IsConnected()
+{
+	return impl->IsConnected();
+}
+
 void
 XmppBroadcast::SetRootCA (const std::string& path)
 {
